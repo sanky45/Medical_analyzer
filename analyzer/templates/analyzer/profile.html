@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h2>User Profile</h2>
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">{{ user.username }}</h5>
+    <p class="card-text"><strong>Email:</strong> {{ user.email }}</p>
+    <p class="card-text"><strong>Date Joined:</strong> {{ user.date_joined|date:'Y-m-d' }}</p>
+  </div>
+</div>
+<h4>Recent Uploaded Reports</h4>
+<ul class="list-group mb-4">
+  {% for report in reports %}
+    <li class="list-group-item">{{ report.file.name|cut:'reports/' }} <span class="text-muted">({{ report.uploaded_at|date:'Y-m-d H:i' }})</span></li>
+  {% empty %}
+    <li class="list-group-item">No reports uploaded yet.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

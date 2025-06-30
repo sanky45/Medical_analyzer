@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Logout | Medical Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-card p-4 text-center" style="background:rgba(255,255,255,0.97);">
+      <img src="https://cdn-icons-png.flaticon.com/512/1828/1828490.png" alt="Logout" width="64" height="64" class="rounded-circle shadow mb-3">
+      <h2 class="fw-bold mb-2" style="color:#2a5d84;">Logged Out</h2>
+      <div class="text-muted mb-3">You have been successfully logged out.</div>
+      <a href="{% url 'analyzer:login' %}" class="btn btn-primary w-100">Login Again</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

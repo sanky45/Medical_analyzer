@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Login | Medical Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-card p-4" style="background:rgba(255,255,255,0.97);">
+      <div class="text-center mb-4">
+        <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="Login" width="64" height="64" class="rounded-circle shadow">
+        <h2 class="fw-bold mt-2" style="color:#2a5d84;">Sign In</h2>
+        <div class="text-muted">Welcome back to Medical Analyzer</div>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username" class="form-label">Username</label>
+          {{ form.username|as_widget:attrs }}
+        </div>
+        <div class="mb-3">
+          <label for="id_password" class="form-label">Password</label>
+          {{ form.password|as_widget:attrs }}
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+      </form>
+      <div class="text-center mt-3">
+        <span class="text-muted">Don't have an account?</span>
+        <a href="{% url 'analyzer:signup' %}" class="fw-bold">Sign Up</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

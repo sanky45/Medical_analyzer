@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Extracted Health Data | Medical Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="card shadow-card p-4" style="background:rgba(255,255,255,0.97);">
+      <div class="text-center mb-3">
+        <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Health Data" width="64" height="64" class="rounded-circle shadow mb-2">
+        <h2 class="fw-bold mb-3" style="color:#2a5d84;">Extracted Health Data</h2>
+      </div>
+      <img src="https://cdn.pixabay.com/photo/2017/08/06/00/03/people-2587069_1280.jpg" alt="Health Data Illustration" class="img-fluid rounded shadow mb-3" style="max-height:180px;object-fit:cover;">
+      {% if report_data %}
+        {% for item in report_data %}
+          <div class="card shadow-card mb-4" style="background:rgba(240,248,255,0.95);">
+            <div class="card-header fw-bold" style="color:#2a5d84;">
+              <i class="bi bi-file-earmark-medical me-2"></i>{{ item.report.file.name|cut:"uploads/" }} ({{ item.report.uploaded_at|date:"M d, Y" }})
+            </div>
+            <div class="card-body">
+              <table class="table table-hover table-bordered align-middle rounded shadow-sm">
+                <thead class="table-primary">
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Value(s)</th>
+                    <th>Unit</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for param, values in item.param_dict.items %}
+                    {% for v in values %}
+                    <tr>
+                      <td>{{ param }}</td>
+                      <td>{{ v.value }}</td>
+                      <td>{{ v.unit }}</td>
+                      <td>{{ v.date|date:"M d, Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-muted text-center">No health data extracted yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

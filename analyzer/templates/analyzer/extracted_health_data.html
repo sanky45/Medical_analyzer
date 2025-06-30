@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Extracted Health Data{% endblock %}
+{% block content %}
+<h2>Extracted Health Data</h2>
+{% if report_data %}
+  {% for group in report_data %}
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <strong>Report:</strong> {{ group.report.file.name|default:'(No file name)' }}<br>
+        <strong>Uploaded at:</strong> {{ group.report.uploaded_at|date:'Y-m-d H:i' }}
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-bordered table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Value</th>
+              <th>Unit</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for param, entries in group.param_dict.items %}
+              {% for entry in entries %}
+              <tr>
+                <td>{{ param }}</td>
+                <td>{{ entry.value }}</td>
+                <td>{{ entry.unit }}</td>
+                <td>{{ entry.date }}</td>
+              </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">No extracted health data found.</div>
+{% endif %}
+{% endblock %}

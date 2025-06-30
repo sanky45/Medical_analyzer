@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Profile | Medical Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card shadow-card p-4" style="background:rgba(255,255,255,0.97);">
+      <div class="d-flex align-items-center mb-3">
+        <img src="https://cdn-icons-png.flaticon.com/512/2922/2922510.png" alt="User Avatar" width="64" height="64" class="rounded-circle me-3 shadow">
+        <div class="text-start">
+          <h2 class="fw-bold mb-1" style="color:#2a5d84;">{{ user.first_name|default:user.username }}</h2>
+          <div class="text-muted">{{ user.email }}</div>
+        </div>
+      </div>
+      <img src="https://cdn.pixabay.com/photo/2016/03/31/19/56/medical-1295961_1280.png" alt="Profile Illustration" class="img-fluid rounded shadow mb-3" style="max-height:180px;object-fit:cover;">
+      <hr>
+      <h5 class="fw-bold mb-2" style="color:#2a5d84;">Your Uploaded Reports</h5>
+      {% if reports %}
+      <ul class="list-group list-group-flush">
+        {% for report in reports|slice:":5" %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span><i class="bi bi-file-earmark-medical me-2"></i>{{ report.file.name|cut:"uploads/" }}</span>
+          <span class="badge bg-primary rounded-pill">{{ report.uploaded_at|date:"M d, Y" }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'analyzer:uploaded_reports' %}" class="btn btn-link mt-2">See all reports</a>
+      {% else %}
+      <div class="text-muted">No reports uploaded yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

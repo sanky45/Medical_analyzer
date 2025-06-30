@@ -1,0 +1,102 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.pyo
+*.pyd
+*.pdb
+*.log
+*.pot
+*.mo
+*.sqlite3
+*.db
+*.DS_Store
+*.coverage
+.coverage.*
+.cache
+*.mypy_cache/
+*.pytest_cache/
+*.tox/
+*.env
+.env
+.venv/
+venv/
+ENV/
+.envrc
+*.env.*
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+
+# VSCode
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Node
+node_modules/
+
+# Secret/config
+*.pem
+*.key
+*.crt
+*.env
+.env.*
+
+# Supabase/Cloud
+.supabase/
+
+# Pinecone
+pinecone.log
+
+# Ignore large files
+*.pdf
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+
+# Ignore Google/AI keys
+*.json
+FIREBASE_CREDENTIALS_PATH
+
+# Ignore test output
+htmlcov/
+
+# Ignore migration history
+*.bak
+*.swp
+*.swo
+
+# Ignore pip
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Ignore other temp
+*.tmp
+*.temp
+
+# Ignore user data
+*.user
+*.sublime-workspace
+*.sublime-project
+
+# Ignore system
+.idea/
+*.iml
+
+# Ignore any other local config
+local_settings.py

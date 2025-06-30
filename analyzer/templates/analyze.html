@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Analyze Report | Medical Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="card shadow-card p-4" style="background:rgba(255,255,255,0.97);">
+      <div class="text-center mb-3">
+        <img src="https://cdn-icons-png.flaticon.com/512/3774/3774299.png" alt="Analyze" width="64" height="64" class="rounded-circle shadow mb-2">
+        <h2 class="fw-bold mb-3" style="color:#2a5d84;">Analyze Your Reports</h2>
+      </div>
+      <img src="https://cdn.pixabay.com/photo/2017/01/10/19/05/medical-1966097_1280.jpg" alt="Analyze Illustration" class="img-fluid rounded shadow mb-3" style="max-height:180px;object-fit:cover;">
+      <form method="post" class="mb-4">
+        {% csrf_token %}
+        <div class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label for="report_id" class="form-label">Select Report</label>
+            <select name="report_id" id="report_id" class="form-select">
+              {% for report in reports %}
+                <option value="{{ report.id }}" {% if report.id|stringformat:'s' == selected_report_id %}selected{% endif %}>{{ report.file.name|cut:"uploads/" }} ({{ report.uploaded_at|date:"M d, Y" }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="user_input" class="form-label">Your Question</label>
+            <input type="text" name="user_input" id="user_input" class="form-control" placeholder="e.g. Show cholesterol trend" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3 w-100">Ask AI</button>
+      </form>
+      {% if answer %}
+      <div class="card shadow-card p-3 mt-4" style="background:rgba(240,248,255,0.95);">
+        <h5 class="fw-bold mb-2" style="color:#2a5d84;">AI Answer</h5>
+        <div>{{ answer|safe }}</div>
+      </div>
+      {% endif %}
+      {% if chat_history %}
+      <div class="mt-4">
+        <h6 class="fw-bold" style="color:#2a5d84;">Chat History</h6>
+        <ul class="list-group list-group-flush">
+          {% for chat in chat_history %}
+            <li class="list-group-item">
+              <span class="fw-semibold">You:</span> {{ chat.question }}<br>
+              <span class="fw-semibold">AI:</span> {{ chat.answer|safe }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medical Report Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        .container { max-width: 900px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px #ccc; padding: 32px; }
+        h1 { color: #2a5d84; text-align: center; }
+        h2 { color: #2a5d84; border-bottom: 2px solid #e0e0e0; padding-bottom: 6px; margin-top: 32px; }
+        .section { margin-bottom: 32px; }
+        .remedies, .research, .guidelines { background: #f0f8ff; border-left: 5px solid #2a5d84; padding: 18px 24px; border-radius: 6px; }
+        .summary { background: #e8f5e9; border-left: 5px solid #43a047; padding: 18px 24px; border-radius: 6px; }
+        .risks { background: #fff3e0; border-left: 5px solid #fb8c00; padding: 18px 24px; border-radius: 6px; }
+        .disease { font-weight: bold; color: #b71c1c; }
+        a { color: #1976d2; }
+        #translated-summary { margin-top: 18px; font-size: 1.1em; color: #2a5d84; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Medical Report Analysis</h1>
+        <!-- Rendered HTML from LLM output -->
+        <div id="summary-text">{{ answer_html|safe }}</div>
+        <div style="margin-top: 24px;">
+            <label for="lang-select"><b>Translate summary/remedies to:</b></label>
+            <select id="lang-select">
+                <option value="hi">Hindi</option>
+                <option value="mr">Marathi</option>
+                <option value="ta">Tamil</option>
+                <option value="bn">Bengali</option>
+                <option value="gu">Gujarati</option>
+                <option value="te">Telugu</option>
+                <option value="kn">Kannada</option>
+                <option value="ml">Malayalam</option>
+            </select>
+            <button onclick="translateSummary()">Translate</button>
+        </div>
+        <div id="translated-summary"></div>
+    </div>
+    <script>
+    function translateSummary() {
+      const text = document.getElementById('summary-text').innerText;
+      const lang = document.getElementById('lang-select').value;
+      fetch('/translate-summary/', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `text=${encodeURIComponent(text)}&lang=${lang}`
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('translated-summary').innerText = data.translated;
+      });
+    }
+    </script>
+</body>
+</html>

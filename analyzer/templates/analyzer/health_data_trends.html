@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Extracted Health Data Trends{% endblock %}
+{% block content %}
+<h2>Extracted Health Data Trends</h2>
+<div class="mb-3">
+  <label for="parameter-select" class="form-label">Select Parameter:</label>
+  <select id="parameter-select" class="form-select">
+    {% for param in parameters %}
+      <option value="{{ param }}">{{ param }}</option>
+    {% endfor %}
+  </select>
+</div>
+<canvas id="trendChart" height="80"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartData = {{ chart_data_json|safe }};
+const paramSelect = document.getElementById('parameter-select');
+const ctx = document.getElementById('trendChart').getContext('2d');
+let chart;
+function renderChart(parameter) {
+  const data = chartData[parameter] || [];
+  const labels = data.map(d => d.date);
+  const values = data.map(d => d.value);
+  const unit = data.length > 0 ? data[0].unit : '';
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: parameter + (unit ? ' (' + unit + ')' : ''),
+        data: values,
+        borderColor: '#007bff',
+        backgroundColor: 'rgba(0,123,255,0.1)',
+        fill: true,
+        tension: 0.2,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        title: { display: false }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Date' } },
+        y: { title: { display: true, text: unit || 'Value' } }
+      }
+    }
+  });
+}
+paramSelect.addEventListener('change', e => renderChart(e.target.value));
+// Initial render
+if (paramSelect.value) renderChart(paramSelect.value);
+</script>
+{% endblock %}
