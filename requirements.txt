@@ -25,3 +25,4 @@ deep-translator
 langchain-google-genai
 google-ai-generativelanguage>=0.6.18,<0.7.0
 langchain-chroma
+gunicorn
