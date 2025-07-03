@@ -23,7 +23,7 @@ from pinecone import Pinecone, ServerlessSpec
 from langchain_pinecone import Pinecone as PineconeStore
 from deep_translator import GoogleTranslator
 import google.generativeai as genai
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 
@@ -42,7 +42,8 @@ def get_firebase_db():
 
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    # Use Gemini API for embeddings to avoid OOM on Render
+    return GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
 
 def process_pdf(file_path, namespace=None, mode="create"):
@@ -50,7 +51,7 @@ def process_pdf(file_path, namespace=None, mode="create"):
     pinecone_region = os.getenv('PINECONE_REGION', 'us-east-1')
     pc = Pinecone(api_key=pinecone_api_key)
     index_name = 'medical-analyzer-index'
-    dimension = 384  # for MiniLM-L6-v2
+    dimension = 768  # for Gemini embeddings
 
     # Create index if it doesn't exist
     if index_name not in pc.list_indexes().names():
