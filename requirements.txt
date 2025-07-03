@@ -23,7 +23,7 @@ langchain-pinecone
 psycopg2-binary
 deep-translator
 langchain-google-genai
-google-ai-generativelanguage>=0.6.18,<0.7.0
+google-ai-generativelanguage
 langchain-chroma
 gunicorn
 google-generativeai
