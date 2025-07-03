@@ -65,25 +65,33 @@ def upload_report(request):
         if form.is_valid():
             report = form.save(commit=False)
             report.user = request.user
-            report.save()
-            # Use report.id as namespace for Pinecone
-            namespace = f"report_{report.id}"
-            retriever = process_pdf(report.file.path, namespace=namespace, mode="create")
-            from langchain_community.chat_message_histories import ChatMessageHistory
-            chat_hist = ChatMessageHistory()
-            # Use a direct prompt to force extraction
-            user_input = "Extract all health parameters and their values from this report. Output only the JSON array as described."
-            from .utils import analyze_with_llm, save_health_data_to_db
-            answer_html, health_data = analyze_with_llm(user_input, retriever, chat_hist)
-            print('[DEBUG] AUTO-EXTRACT LLM RAW ANSWER:', answer_html)
-            print('[DEBUG] AUTO-EXTRACT LLM health_data:', health_data)
+            report.save()  # Ensure file is saved before reading
             # Read the raw PDF text for filtering
             from langchain_community.document_loaders import PyPDFLoader
             loader = PyPDFLoader(report.file.path)
             docs = loader.load()
             pdf_text = "\n".join([doc.page_content for doc in docs])
+            print('[DEBUG] PDF text length:', len(pdf_text))
+            # Use report.id as namespace for Pinecone
+            namespace = f"report_{report.id}"
+            retriever = process_pdf(report.file.path, namespace=namespace, mode="create")
+            from langchain_community.chat_message_histories import ChatMessageHistory
+            chat_hist = ChatMessageHistory()
+            user_input = "Extract all health parameters and their values from this report. Output only the JSON array as described."
+            from .utils import analyze_with_llm, save_health_data_to_db
+            answer_html, health_data = analyze_with_llm(user_input, retriever, chat_hist, context=pdf_text)
+            print('[DEBUG] AUTO-EXTRACT LLM RAW ANSWER:', answer_html)
+            print('[DEBUG] AUTO-EXTRACT LLM health_data:', health_data)
+            if not health_data:
+                print('[DEBUG] No health_data extracted! LLM output was:', answer_html)
             if health_data:
-                save_health_data_to_db(health_data, patient_id=str(request.user.id), report_date=report.uploaded_at.date() if hasattr(report, 'uploaded_at') else None, pdf_text=pdf_text)
+                save_health_data_to_db(
+                    health_data,
+                    patient_id=str(request.user.id),
+                    report_date=report.uploaded_at.date() if hasattr(report, 'uploaded_at') else None,
+                    pdf_text=pdf_text,
+                    report=report
+                )
             messages.success(request, 'Report uploaded and health data extracted!')
             return redirect('analyzer:dashboard')
     else:
@@ -119,7 +127,12 @@ def analyze_report(request):
             # Save extracted health data to DB (if any)
             if health_data:
                 print('[DEBUG] Saving health_data to DB for user:', request.user.id)
-                save_health_data_to_db(health_data, patient_id=str(request.user.id), report_date=report.uploaded_at.date() if hasattr(report, 'uploaded_at') else None)
+                save_health_data_to_db(
+                    health_data,
+                    patient_id=str(request.user.id),
+                    report_date=report.uploaded_at.date() if hasattr(report, 'uploaded_at') else None,
+                    report=report
+                )
             else:
                 print('[DEBUG] No health_data extracted from LLM output.')
             # Refresh chat history
@@ -142,37 +155,6 @@ def user_profile(request):
     return render(request, 'analyzer/profile.html', {
         'user': user,
         'reports': reports
-    })
-
-# Extracted health data
-@login_required
-def extracted_health_data(request):
-    from .models import HealthData, UploadedReport
-    user_id = str(request.user.id)
-    # Get all reports for this user
-    reports = UploadedReport.objects.filter(user=request.user).order_by('-uploaded_at')
-    # For each report, get its health data (all dates for that report)
-    report_data = []
-    for report in reports:
-        data = HealthData.objects.filter(patient_id=user_id, report_date=report.uploaded_at.date())
-        # Group by parameter for this report and date
-        param_dict = {}
-        for row in data:
-            if row.parameter not in param_dict:
-                param_dict[row.parameter] = []
-            param_dict[row.parameter].append({
-                'value': row.value,
-                'unit': row.unit,
-                'date': row.report_date
-            })
-        if data.exists():
-            report_data.append({
-                'report': report,
-                'health_data': data,
-                'param_dict': param_dict
-            })
-    return render(request, 'analyzer/extracted_health_data.html', {
-        'report_data': report_data
     })
 
 @login_required
@@ -207,3 +189,59 @@ def translate_summary(request):
         lang = request.POST.get('lang', 'hi')
         translated = translate_text(text, dest_lang=lang)
         return JsonResponse({'translated': translated})
+
+@login_required
+def health_data_trends(request):
+    from .models import HealthData, UploadedReport
+    user_id = str(request.user.id)
+    reports = UploadedReport.objects.filter(user=request.user).order_by('uploaded_at')
+    # Get all health data for this user, ordered by date
+    data = HealthData.objects.filter(patient_id=user_id).order_by('report_date')
+    # Group by parameter
+    chart_data = {}
+    for row in data:
+        if row.parameter not in chart_data:
+            chart_data[row.parameter] = []
+        chart_data[row.parameter].append({
+            'date': row.report_date.strftime('%Y-%m-%d'),
+            'value': float(row.value) if row.value.replace('.', '', 1).isdigit() else row.value,
+            'unit': row.unit,
+            'report_id': row.report.id if row.report else None
+        })
+    parameters = list(chart_data.keys())
+    import json
+    chart_data_json = json.dumps(chart_data)
+    # Prepare report list for dropdowns
+    report_options = [
+        {'id': r.id, 'date': r.uploaded_at.strftime('%Y-%m-%d'), 'name': os.path.basename(r.file.name)} for r in reports
+    ]
+    return render(request, 'analyzer/health_data_trends.html', {
+        'parameters': parameters,
+        'chart_data_json': chart_data_json,
+        'report_options': report_options
+    })
+
+@login_required
+def extracted_key_parameters(request):
+    from .models import HealthData, UploadedReport
+    user_id = str(request.user.id)
+    reports = UploadedReport.objects.filter(user=request.user).order_by('-uploaded_at')
+    report_data = []
+    for report in reports:
+        data = HealthData.objects.filter(patient_id=user_id, report=report)
+        param_list = []
+        for row in data:
+            param_list.append({
+                'parameter': row.parameter,
+                'value': row.value,
+                'unit': row.unit,
+                'date': row.report_date
+            })
+        if param_list:
+            report_data.append({
+                'report': report,
+                'parameters': param_list
+            })
+    return render(request, 'analyzer/extracted_key_parameters.html', {
+        'report_data': report_data
+    })

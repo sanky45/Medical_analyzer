@@ -209,6 +209,9 @@ def analyze_with_llm(user_input, retriever, chat_history=None, context=""):
     print("[DEBUG] fixed_messages:", fixed_messages)
     print("[DEBUG] fixed_messages types:", [type(m) for m in fixed_messages])
     print("[DEBUG] retriever type:", type(retriever))
+    # Always append context to user_input for guaranteed LLM visibility
+    if context:
+        user_input = f"{user_input}\n\n---\n\nHere is the full text of the user's medical report:\n{context}"
     response = rag_chain.invoke({
         "input": user_input,
         "messages": chat_history,
@@ -226,11 +229,12 @@ def analyze_with_llm(user_input, retriever, chat_history=None, context=""):
     return answer_html, health_data
 
 
-def save_health_data_to_db(health_data, patient_id, report_date=None, pdf_text=None):
+def save_health_data_to_db(health_data, patient_id, report_date=None, pdf_text=None, report=None):
     if report_date is None:
         report_date = date.today()
     for entry in health_data:
-        param = entry.get('parameter', '')
+        # Normalize parameter key
+        param = entry.get('parameter') or entry.get('test') or entry.get('name') or ''
         value = str(entry.get('value', ''))
         unit = entry.get('unit', '')
         if unit is None:
@@ -246,7 +250,8 @@ def save_health_data_to_db(health_data, patient_id, report_date=None, pdf_text=N
             report_date=report_date,
             parameter=param,
             value=value,
-            unit=unit
+            unit=unit,
+            report=report
         )
 
 

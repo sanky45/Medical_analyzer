@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Extracted Key Parameters{% endblock %}
+{% block content %}
+<h2>Extracted Key Parameters</h2>
+{% if report_data %}
+  <div class="alert alert-secondary small">Debug: {{ report_data|length }} reports found.</div>
+  {% for group in report_data %}
+    <div class="card mb-4 shadow">
+      <div class="card-header bg-info text-white">
+        <strong>Report:</strong> {{ group.report.file.name|default:'(No file name)' }}<br>
+        <strong>Uploaded at:</strong> {{ group.report.uploaded_at|date:'Y-m-d H:i' }}
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-bordered table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Parameter</th>
+              <th>Original Value</th>
+              <th>Unit</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in group.parameters %}
+            <tr>
+              <td>{{ entry.parameter }}</td>
+              <td>{{ entry.value }}</td>
+              <td>{{ entry.unit }}</td>
+              <td>{{ entry.date }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if group.parameters|length == 0 %}
+          <div class="alert alert-warning mt-2">No parameters extracted for this report.</div>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info">No extracted key parameters found.</div>
+{% endif %}
+{% endblock %}

@@ -2,57 +2,172 @@
 {% block title %}Extracted Health Data Trends{% endblock %}
 {% block content %}
 <h2>Extracted Health Data Trends</h2>
-<div class="mb-3">
-  <label for="parameter-select" class="form-label">Select Parameter:</label>
-  <select id="parameter-select" class="form-select">
-    {% for param in parameters %}
-      <option value="{{ param }}">{{ param }}</option>
-    {% endfor %}
-  </select>
+<div class="row mb-3">
+  <div class="col-md-4">
+    <label for="parameter-select" class="form-label">Select Parameter:</label>
+    <select id="parameter-select" class="form-select">
+      {% for param in parameters %}
+        <option value="{{ param }}">{{ param }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label for="report1-select" class="form-label">Compare: Report 1</label>
+    <select id="report1-select" class="form-select">
+      <option value="">-- Select --</option>
+      {% for r in report_options %}
+        <option value="{{ r.id }}">{{ r.date }} - {{ r.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label for="report2-select" class="form-label">Compare: Report 2</label>
+    <select id="report2-select" class="form-select">
+      <option value="">-- Select --</option>
+      {% for r in report_options %}
+        <option value="{{ r.id }}">{{ r.date }} - {{ r.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
 </div>
+<div id="comparison-table"></div>
 <canvas id="trendChart" height="80"></canvas>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const chartData = {{ chart_data_json|safe }};
 const paramSelect = document.getElementById('parameter-select');
+const report1Select = document.getElementById('report1-select');
+const report2Select = document.getElementById('report2-select');
 const ctx = document.getElementById('trendChart').getContext('2d');
 let chart;
-function renderChart(parameter) {
+
+function toNumber(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? null : n;
+}
+
+function renderChart(parameter, report1, report2) {
   const data = chartData[parameter] || [];
-  const labels = data.map(d => d.date);
-  const values = data.map(d => d.value);
+  // Use {x, y} for all points, y as number or null
+  const points = data.map(d => ({ x: d.date, y: toNumber(d.value) }));
   const unit = data.length > 0 ? data[0].unit : '';
+  // Find points for selected reports (only if value exists)
+  let report1Point = null, report2Point = null;
+  if (report1) {
+    const found = data.find(d => d.report_id == report1 && toNumber(d.value) !== null);
+    if (found) report1Point = { x: found.date, y: toNumber(found.value) };
+  }
+  if (report2) {
+    const found = data.find(d => d.report_id == report2 && toNumber(d.value) !== null);
+    if (found) report2Point = { x: found.date, y: toNumber(found.value) };
+  }
   if (chart) chart.destroy();
+  const datasets = [{
+    label: parameter + (unit ? ' (' + unit + ')' : ''),
+    data: points,
+    borderColor: '#007bff',
+    backgroundColor: 'rgba(0,123,255,0.1)',
+    fill: true,
+    tension: 0.2,
+    pointRadius: 4,
+    pointHoverRadius: 6
+  }];
+  // Overlay scatter points for selected reports
+  if (report1Point) {
+    datasets.push({
+      type: 'scatter',
+      label: 'Report 1',
+      data: [report1Point],
+      backgroundColor: '#ff9800',
+      borderColor: '#ff9800',
+      pointRadius: 10,
+      pointHoverRadius: 12,
+      showLine: false,
+      order: 2
+    });
+  }
+  if (report2Point) {
+    datasets.push({
+      type: 'scatter',
+      label: 'Report 2',
+      data: [report2Point],
+      backgroundColor: '#4caf50',
+      borderColor: '#4caf50',
+      pointRadius: 10,
+      pointHoverRadius: 12,
+      showLine: false,
+      order: 2
+    });
+  }
   chart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: labels,
-      datasets: [{
-        label: parameter + (unit ? ' (' + unit + ')' : ''),
-        data: values,
-        borderColor: '#007bff',
-        backgroundColor: 'rgba(0,123,255,0.1)',
-        fill: true,
-        tension: 0.2,
-        pointRadius: 4,
-        pointHoverRadius: 6
-      }]
+      datasets: datasets
     },
     options: {
       responsive: true,
       plugins: {
         legend: { display: true },
-        title: { display: false }
+        title: { display: false },
+        tooltip: {
+          mode: 'nearest',
+          intersect: false
+        }
       },
+      parsing: false,
       scales: {
-        x: { title: { display: true, text: 'Date' } },
+        x: {
+          type: 'category',
+          title: { display: true, text: 'Date' }
+        },
         y: { title: { display: true, text: unit || 'Value' } }
       }
     }
   });
 }
-paramSelect.addEventListener('change', e => renderChart(e.target.value));
+
+function renderComparisonTable(parameter, report1, report2) {
+  const data = chartData[parameter] || [];
+  const row1 = data.find(d => d.report_id == report1);
+  const row2 = data.find(d => d.report_id == report2);
+  let html = '';
+  if (row1 && row2) {
+    const diff = (parseFloat(row2.value) - parseFloat(row1.value)).toFixed(2);
+    let trend = '';
+    if (!isNaN(diff)) {
+      if (diff > 0) trend = '<span class="text-danger">↑ +' + diff + '</span>';
+      else if (diff < 0) trend = '<span class="text-success">↓ ' + diff + '</span>';
+      else trend = '<span class="text-secondary">No change</span>';
+    }
+    html = `<table class="table table-bordered mt-3">
+      <thead><tr><th></th><th>Report 1</th><th>Report 2</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr><th>Date</th><td>${row1.date}</td><td>${row2.date}</td><td></td></tr>
+        <tr><th>Value</th><td>${row1.value} ${row1.unit}</td><td>${row2.value} ${row2.unit}</td><td>${trend}</td></tr>
+      </tbody>
+    </table>`;
+  } else {
+    html = '<div class="alert alert-info mt-3">Select two reports with this parameter to compare.</div>';
+  }
+  document.getElementById('comparison-table').innerHTML = html;
+}
+
+function updateTrends() {
+  const param = paramSelect.value;
+  const r1 = report1Select.value;
+  const r2 = report2Select.value;
+  renderChart(param, r1, r2);
+  if (r1 && r2) {
+    renderComparisonTable(param, r1, r2);
+  } else {
+    document.getElementById('comparison-table').innerHTML = '';
+  }
+}
+
+paramSelect.addEventListener('change', updateTrends);
+report1Select.addEventListener('change', updateTrends);
+report2Select.addEventListener('change', updateTrends);
 // Initial render
-if (paramSelect.value) renderChart(paramSelect.value);
+updateTrends();
 </script>
 {% endblock %}

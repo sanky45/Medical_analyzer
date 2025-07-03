@@ -25,6 +25,7 @@ class HealthData(models.Model):
     parameter = models.CharField(max_length=100)
     value = models.CharField(max_length=50)
     unit = models.CharField(max_length=20)
+    report = models.ForeignKey('UploadedReport', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.patient_id} - {self.parameter}: {self.value} {self.unit} ({self.report_date})"

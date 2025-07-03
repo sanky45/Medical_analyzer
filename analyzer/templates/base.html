@@ -130,7 +130,8 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:analyze_report' %}">Analyze</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:profile' %}">Profile</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:logout' %}">Logout</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:extracted_health_data' %}">Extracted Health Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:extracted_key_parameters' %}">Extracted Key Parameters</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:health_data_trends' %}">Health Data Trends</a></li>
         <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:uploaded_reports' %}">My Reports</a></li>
         {% else %}
         <li class="nav-item"><a class="nav-link" href="{% url 'analyzer:login' %}">Login</a></li>
@@ -273,7 +274,7 @@ function sendMessage() {
     })
   })
     .then(r => r.json())
-    .then(data => {
+    .then data => {
       if (data.answer) {
         appendMessage('ai', data.answer);
         chatbotHistory.push({ role: 'ai', content: data.answer });
