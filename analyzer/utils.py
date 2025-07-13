@@ -138,6 +138,14 @@ def extract_health_data_from_llm_output(llm_output):
 
 
 def analyze_with_llm(user_input, retriever, chat_history=None, context=""):
+    from google.api_core.exceptions import ResourceExhausted, TooManyRequests
+    try:
+        import pinecone.core.client.exceptions as pinecone_exceptions
+    except ImportError:
+        class pinecone_exceptions:
+            class RateLimitException(Exception):
+                pass
+
     contextualize_q_prompt = ChatPromptTemplate.from_messages([
         ("system", "Reformulate the user's question to make it self-contained and clear."),
         MessagesPlaceholder("messages"),
@@ -213,12 +221,20 @@ def analyze_with_llm(user_input, retriever, chat_history=None, context=""):
     # Always append context to user_input for guaranteed LLM visibility
     if context:
         user_input = f"{user_input}\n\n---\n\nHere is the full text of the user's medical report:\n{context}"
-    response = rag_chain.invoke({
-        "input": user_input,
-        "messages": chat_history,
-        "context": context
-    })
-    answer = response.get("answer", "No response generated.")
+    try:
+        response = rag_chain.invoke({
+            "input": user_input,
+            "messages": chat_history,
+            "context": context
+        })
+        answer = response.get("answer", "No response generated.")
+    except (ResourceExhausted, TooManyRequests) as e:
+        answer = "Sorry, the Gemini API is currently rate-limited or overloaded. Please try again in a few minutes."
+    except pinecone_exceptions.RateLimitException as e:
+        answer = "Sorry, the Pinecone service is currently rate-limited. Please try again in a few minutes."
+    except Exception as e:
+        print(f"[ERROR] LLM or RAG chain error: {e}")
+        answer = f"Sorry, an error occurred: {str(e)}"
     # Only append to chat_history if it is a ChatMessageHistory object
     if hasattr(chat_history, 'messages'):
         chat_history.messages.append(AIMessage(content=answer))
