@@ -1,6 +1,5 @@
 Django>=4.2
 pandas
-matplotlib
 firebase-admin
 scipy
 langchain
@@ -28,3 +27,4 @@ langchain-chroma
 gunicorn
 google-generativeai
 setuptools
+whitenoise

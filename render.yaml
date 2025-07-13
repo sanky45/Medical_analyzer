@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: medical-analyzer
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn medical_analyzer.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: medical_analyzer.settings
+      # Add your other environment variables here, e.g. for API keys
+      # - key: GEMINI_API_KEY
+      #   value: your-key-here
