@@ -7,7 +7,6 @@ from .forms import ReportUploadForm
 from .models import UploadedReport, ChatHistory
 from .utils import process_pdf, analyze_with_llm, get_firebase_db, save_health_data_to_db, translate_text
 import pandas as pd
-import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 import os
