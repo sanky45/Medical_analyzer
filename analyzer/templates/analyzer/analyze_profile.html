@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Analyze Profile{% endblock %}
+{% block content %}
+<div class="container">
+  <h2 class="mb-4">AI-Powered Health Profile Analysis</h2>
+  {% if error_message %}
+    <div class="alert alert-danger">{{ error_message }}</div>
+  {% endif %}
+  <div class="card shadow-card mb-4">
+    <div class="card-body">
+      {% if answer_html %}
+        <div class="markdown-body">{{ answer_html|safe }}</div>
+      {% elif not error_message %}
+        <div class="alert alert-info">No analysis available. Please upload reports first.</div>
+      {% endif %}
+    </div>
+  </div>
+  <a href="{% url 'analyzer:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

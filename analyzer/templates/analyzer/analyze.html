@@ -1,41 +1,43 @@
 {% extends 'base.html' %}
 {% block title %}Analyze Report{% endblock %}
 {% block content %}
-<h2>Ask a Question About Your PDF</h2>
-<form method="post">
-  {% csrf_token %}
-  <div class="mb-3">
-    <label for="report_id" class="form-label">Select PDF:</label>
-    <select name="report_id" id="report_id" class="form-select" required>
-      {% for report in reports %}
-        <option value="{{ report.id }}" {% if report.id|stringformat:'s' == selected_report_id %}selected{% endif %}>{{ report.file.name|cut:'reports/' }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="mb-3">
-    <label for="user_input" class="form-label">Your Question:</label>
-    <input type="text" name="user_input" id="user_input" class="form-control" required>
-  </div>
-  <button type="submit" class="btn btn-primary">Ask</button>
-</form>
-{% if answer %}
-  <div class="mt-4">
-    <h4>Answer:</h4>
-    <div class="alert alert-info" style="overflow-x:auto;">{{ answer|safe }}</div>
-  </div>
-{% endif %}
-{% if chat_history %}
-  <div class="mt-5">
-    <h4>Chat History</h4>
-    <ul class="list-group">
-      {% for chat in chat_history %}
-        <li class="list-group-item">
-          <strong>You:</strong> {{ chat.question|linebreaksbr }}<br>
-          <strong>AI:</strong> {{ chat.answer|safe }}<br>
-          <small class="text-muted">{{ chat.timestamp|date:'Y-m-d H:i' }}</small>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-{% endif %}
+<div class="container analyze-content-bg">
+  <h2>Ask a Question About Your PDF</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label for="report_id" class="form-label">Select PDF:</label>
+      <select name="report_id" id="report_id" class="form-select" required>
+        {% for report in reports %}
+          <option value="{{ report.id }}" {% if report.id|stringformat:'s' == selected_report_id %}selected{% endif %}>{{ report.file.name|cut:'reports/' }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="user_input" class="form-label">Your Question:</label>
+      <input type="text" name="user_input" id="user_input" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Ask</button>
+  </form>
+  {% if answer %}
+    <div class="mt-4">
+      <h4>Answer:</h4>
+      <div class="alert alert-info" style="overflow-x:auto;">{{ answer|safe }}</div>
+    </div>
+  {% endif %}
+  {% if chat_history %}
+    <div class="mt-5">
+      <h4>Chat History</h4>
+      <ul class="list-group">
+        {% for chat in chat_history %}
+          <li class="list-group-item">
+            <strong>You:</strong> {{ chat.question|linebreaksbr }}<br>
+            <strong>AI:</strong> {{ chat.answer|safe }}<br>
+            <small class="text-muted">{{ chat.timestamp|date:'Y-m-d H:i' }}</small>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>
 {% endblock %}

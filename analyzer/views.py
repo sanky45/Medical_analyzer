@@ -245,3 +245,41 @@ def extracted_key_parameters(request):
     return render(request, 'analyzer/extracted_key_parameters.html', {
         'report_data': report_data
     })
+
+@login_required
+def analyze_profile(request):
+    reports = UploadedReport.objects.filter(user=request.user).order_by('-uploaded_at')
+    all_text = ""
+    for report in reports:
+        if hasattr(report, 'file') and report.file:
+            try:
+                with open(report.file.path, 'r', encoding='utf-8', errors='ignore') as f:
+                    all_text += f.read() + "\n\n"
+            except Exception:
+                continue
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate
+    system_prompt = """
+    You are a highly knowledgeable and detailed medical AI assistant. Analyze the user's entire health profile and extracted medical data. Provide a summary, key findings, trends, and recommendations in a clear, structured format.
+    {context}
+    """
+    qa_prompt = ChatPromptTemplate(
+        messages=[
+            SystemMessagePromptTemplate.from_template(system_prompt),
+            ("human", "Give me a summary and insights for my entire health profile.")
+        ]
+    )
+    model = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+    import markdown
+    answer_html = None
+    error_message = None
+    try:
+        response = model.invoke(all_text)
+        answer_html = markdown.markdown(response.content, extensions=["tables", "fenced_code"])
+    except Exception as e:
+        error_message = str(e)
+    return render(request, 'analyzer/analyze_profile.html', {'answer_html': answer_html, 'reports': reports, 'error_message': error_message})
+
+@login_required
+def chatbot_widget(request):
+    return render(request, 'analyzer/chatbot_widget.html')

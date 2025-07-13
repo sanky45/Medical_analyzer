@@ -18,4 +18,6 @@ urlpatterns = [
     path('chatbot/ask/', chatbot_ask, name='chatbot_ask'),
     path('health-data-trends/', views.health_data_trends, name='health_data_trends'),
     path('extracted-key-parameters/', views.extracted_key_parameters, name='extracted_key_parameters'),
+    path('analyze-profile/', views.analyze_profile, name='analyze_profile'),
+    path('chatbot-widget/', views.chatbot_widget, name='chatbot_widget'),
 ]
