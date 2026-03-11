@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Symptom Checker{% endblock %}
+{% block content %}
+<div class="card shadow-card p-4 mx-auto" style="max-width: 540px;">
+  <h3 class="mb-3">🩺 Symptom Checker</h3>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary mt-2">Check Possible Diseases</button>
+  </form>
+  {% if result_html %}
+    <hr>
+    <h5>Possible Diseases/Conditions:</h5>
+    <div class="alert alert-info">{{ result_html|safe }}</div>
+  {% endif %}
+</div>
+{% endblock %}

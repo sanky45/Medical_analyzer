@@ -1,24 +1,124 @@
+from analyzer.forms import MedicalImageUploadForm
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import os
+import os
+import json
+import base64
+import pandas as pd
+from io import BytesIO
+import logging
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import ReportUploadForm
-from .models import UploadedReport, ChatHistory
-from .utils import process_pdf, analyze_with_llm, get_firebase_db, save_health_data_to_db, translate_text
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from analyzer.forms import ReportUploadForm, SymptomCheckerForm
+from analyzer.models import UploadedReport, ChatHistory, HealthData
+from analyzer.utils import process_pdf, analyze_with_llm, get_firebase_db, save_health_data_to_db
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.tools import Tool
 import pandas as pd
 from io import BytesIO
 import base64
 import os
 import json
-from django.http import JsonResponse
-from langchain_core.messages import HumanMessage, AIMessage
 import pinecone
 
-# Dashboard view
+
+
+
+def medical_image_annotation(request):
+    from analyzer.utils import analyze_medical_image_with_gemini, export_annotation_pdf
+    image_url = None
+    explanation = None
+    explanation_text = None
+    export_pdf = False
+    
+    if request.method == 'POST':
+        form = MedicalImageUploadForm(request.POST, request.FILES)
+        action = request.POST.get('action', 'submit')
+        
+        if form.is_valid():
+            image = form.cleaned_data['image']
+            user_prompt = form.cleaned_data.get('prompt', '')
+            
+            # Save uploaded image
+            file_path = default_storage.save('medical_images/' + image.name, ContentFile(image.read()))
+            image_url = default_storage.url(file_path)
+            abs_image_path = default_storage.path(file_path)
+            
+            # Analyze image with Gemini Vision
+            try:
+                explanation, explanation_text = analyze_medical_image_with_gemini(
+                    abs_image_path,
+                    user_prompt=user_prompt
+                )
+                messages.success(request, 'Image analyzed successfully!')
+            except Exception as e:
+                explanation = f"<p style='color: red;'>Error analyzing image: {str(e)}</p>"
+                explanation_text = f"Error analyzing image: {str(e)}"
+                messages.error(request, f'Image analysis error: {str(e)}')
+            
+            # Export as PDF if requested
+            if action == 'export_pdf' and explanation_text:
+                return export_annotation_pdf(image_url, explanation_text)
+    else:
+        form = MedicalImageUploadForm()
+    
+    return render(request, 'analyzer/medical_image_annotation.html', {
+        'form': form,
+        'image_url': image_url,
+        'explanation': explanation,
+        'export_pdf': export_pdf
+    })
+
+
+
+# Symptom Checker View
+def symptom_checker(request):
+    from analyzer.utils import medical_agent
+    result = None
+    result_html = None
+    if request.method == 'POST':
+        form = SymptomCheckerForm(request.POST)
+        if form.is_valid():
+            symptoms_raw = form.cleaned_data['symptoms']
+            # Pass user input as a structured prompt to the agent
+            prompt = f"""Analyze the following symptoms and provide a comprehensive medical overview:
+
+1. Possible Medical Conditions - List conditions that could cause these symptoms
+2. Severity Assessment - Rate as mild, moderate, or severe
+3. Recommended Next Steps - Suggest self-care, doctor visit, or emergency care
+4. Warning Signs - Highlight symptoms requiring immediate medical attention
+5. General Health Recommendations - Offer preventive care suggestions
+
+Symptom List: {symptoms_raw}
+
+IMPORTANT DISCLAIMER: This is for informational purposes only and cannot replace a medical diagnosis. Always consult a licensed healthcare professional for proper medical evaluation and treatment."""
+            try:
+                result = medical_agent.run(prompt)
+            except Exception as e:
+                result = f"Error analyzing symptoms: {e}"
+            import markdown
+            result_html = markdown.markdown(result, extensions=["tables", "fenced_code"])
+    else:
+        form = SymptomCheckerForm()
+    return render(request, 'analyzer/symptom_checker.html', {
+        'form': form,
+        'result': result,
+        'result_html': result_html
+    })
+
 @login_required
 def dashboard(request):
-    return render(request, 'analyzer/dashboard.html')
+    # Get last 3 reports for the logged-in user
+    recent_reports = UploadedReport.objects.filter(user=request.user).order_by('-uploaded_at')[:3]
+    return render(request, 'analyzer/dashboard.html', {
+        'recent_reports': recent_reports
+    })
 
 # User signup
 
@@ -182,12 +282,8 @@ def delete_report(request, report_id):
         return redirect('analyzer:uploaded_reports')
     return redirect('analyzer:uploaded_reports')
 
-def translate_summary(request):
-    if request.method == 'POST':
-        text = request.POST.get('text')
-        lang = request.POST.get('lang', 'hi')
-        translated = translate_text(text, dest_lang=lang)
-        return JsonResponse({'translated': translated})
+
+
 
 @login_required
 def health_data_trends(request):
@@ -220,9 +316,12 @@ def health_data_trends(request):
         'report_options': report_options
     })
 
+
+
+
 @login_required
 def extracted_key_parameters(request):
-    from .models import HealthData, UploadedReport
+    from analyzer.models import HealthData, UploadedReport
     user_id = str(request.user.id)
     reports = UploadedReport.objects.filter(user=request.user).order_by('-uploaded_at')
     report_data = []
@@ -244,6 +343,8 @@ def extracted_key_parameters(request):
     return render(request, 'analyzer/extracted_key_parameters.html', {
         'report_data': report_data
     })
+
+
 
 @login_required
 def analyze_profile(request):

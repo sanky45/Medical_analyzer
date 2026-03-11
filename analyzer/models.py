@@ -20,7 +20,7 @@ class ChatHistory(models.Model):
         return f"{self.user.username} - {self.report.file.name} - {self.timestamp}"
 
 class HealthData(models.Model):
-    patient_id = models.CharField(max_length=100)  # Replace with ForeignKey if you have a Patient model
+    patient_id = models.CharField(max_length=100)
     report_date = models.DateField()
     parameter = models.CharField(max_length=100)
     value = models.CharField(max_length=50)
@@ -29,3 +29,6 @@ class HealthData(models.Model):
 
     def __str__(self):
         return f"{self.patient_id} - {self.parameter}: {self.value} {self.unit} ({self.report_date})"
+
+    def summary(self):
+        return f"{self.parameter}: {self.value} {self.unit} ({self.report_date})"
