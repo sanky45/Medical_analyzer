@@ -29,3 +29,4 @@ gunicorn
 google-generativeai
 setuptools
 whitenoise
+gunicorn==20.1.0
